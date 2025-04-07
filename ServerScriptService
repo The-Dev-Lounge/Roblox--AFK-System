@@ -1,0 +1,74 @@
+Script:
+
+--Made by Wherahamz234--
+--Join the Discord: https://discord.gg/E9DV9WesJy--
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local AFKEvent = ReplicatedStorage:FindFirstChild("AFK")
+
+--[ SETUP REMOTE EVENT ]--
+if not AFKEvent then
+	AFKEvent = Instance.new("RemoteEvent")
+	AFKEvent.Name = "AFK"
+	AFKEvent.Parent = ReplicatedStorage
+	print("AFK RemoteEvent created.")
+end
+
+
+local function updateAFK(player, enable)
+	local character = player.Character
+	if not character then return end
+
+	local head = character:FindFirstChild("Head")
+	if not head then return end
+
+	local afkTagInstance = head:FindFirstChild("AFKTag")
+	if not afkTagInstance then
+		task.wait(0.5)
+		afkTagInstance = head:FindFirstChild("AFKTag")
+		if not afkTagInstance then
+			warn("AFKTag GUI not found in Head for player:", player.Name)
+			return -- Exit if tag is still not found
+		end
+	end
+
+	local mainFrame = afkTagInstance:FindFirstChild("Frame")
+	local afkTextLabel = mainFrame and mainFrame:FindFirstChild("AFKTagT")
+
+	if not mainFrame or not afkTextLabel then
+		warn("AFKTag GUI structure invalid for player:", player.Name)
+		return -- Exit if GUI structure is wrong
+	end
+
+	if enable then
+		mainFrame.Visible = true
+		afkTextLabel.Text = "~AFK~"
+		afkTextLabel.TextTransparency = 0
+		afkTextLabel.TextStrokeTransparency = 0.8
+		afkTextLabel.Visible = true
+	else
+		mainFrame.Visible = false
+	
+	end
+end
+
+AFKEvent.OnServerEvent:Connect(function(player, isNowAFK)
+	-- Basic validation
+	if typeof(isNowAFK) ~= "boolean" then
+		warn("Received non-boolean value for AFK status from player:", player.Name)
+		return
+	end
+
+
+	local success, err = pcall(updateAFK, player, isNowAFK)
+	if not success then
+		warn("Error updating AFK status for player:", player.Name, "-", err)
+	end
+end)
+
+-- Handle player leaving to clean up (optional but good practice)
+Players.PlayerRemoving:Connect(function(player)
+end)
+
+print("AFK Server Handler Loaded.")
