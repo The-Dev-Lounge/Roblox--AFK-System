@@ -1,0 +1,141 @@
+Local script which goes in **StarterCharacterScripts**:
+
+--Made by Wherahamz234--
+--Join the Discord: https://discord.gg/E9DV9WesJy--
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+
+local Player = Players.LocalPlayer
+local AFKEvent = ReplicatedStorage:WaitForChild("AFK")
+
+
+local INACTIVITY_THRESHOLD = 1 -- Seconds before being marked inactive (e.g., 1 minute) - ADJUST AS NEEDED
+local CHECK_INTERVAL = 0 -- How often to check for inactivity (in seconds) - ADJUST AS NEEDED
+
+
+local lastInteractionTime = tick() 
+local isWindowFocused = true     
+local isCurrentlyAFK = false     
+local character = Player.Character or Player.CharacterAdded:Wait() -
+local humanoid = character:WaitForChild("Humanoid") 
+
+
+local function resetInactivityTimer()
+
+	lastInteractionTime = tick()
+
+end
+
+
+local function onCharacterAdded(newCharacter)
+	character = newCharacter
+	humanoid = newCharacter:WaitForChild("Humanoid")
+	resetInactivityTimer() 
+	
+end
+
+-- Function to check AFK status and update server if changed
+local function checkAndUpdateAFKStatus()
+	local timeNow = tick()
+
+	local isMoving = false
+	if character and humanoid and humanoid.Health > 0 then
+
+		if humanoid.MoveDirection.Magnitude > 0.01 then 
+			isMoving = true
+		end
+	end
+
+	if isMoving then
+		resetInactivityTimer()
+	end
+
+	local timeSinceLastInteraction = timeNow - lastInteractionTime
+
+	local shouldBeAFK = (timeSinceLastInteraction >= INACTIVITY_THRESHOLD and not isMoving) or (not isWindowFocused)
+
+
+	if shouldBeAFK ~= isCurrentlyAFK then
+		isCurrentlyAFK = shouldBeAFK
+		local success, err = pcall(function()
+			AFKEvent:FireServer(isCurrentlyAFK)
+		end)
+		if not success then
+			warn("Failed to fire Afk event:", err)
+		end
+	end
+end
+
+
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+
+	if gameProcessedEvent then return end
+
+	if input.UserInputType == Enum.UserInputType.Keyboard or
+		input.UserInputType == Enum.UserInputType.MouseButton1 or
+		input.UserInputType == Enum.UserInputType.MouseButton2 or
+		input.UserInputType == Enum.UserInputType.MouseButton3 then
+		resetInactivityTimer()
+	end
+	
+	if input.UserInputType == Enum.UserInputType.Touch then
+		resetInactivityTimer()
+	end
+
+end)
+
+
+UserInputService.InputChanged:Connect(function(input, gameProcessedEvent)
+	if gameProcessedEvent then return end
+
+
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or
+			UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) or
+			UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton3) then
+			resetInactivityTimer() 
+		end
+	end
+
+	if input.UserInputType == Enum.UserInputType.Gamepad1 or
+		input.UserInputType == Enum.UserInputType.Gamepad2 or
+		input.UserInputType == Enum.UserInputType.Gamepad3 or
+		input.UserInputType == Enum.UserInputType.Gamepad4 or
+		input.UserInputType == Enum.UserInputType.Gamepad5 or
+		input.UserInputType == Enum.UserInputType.Gamepad6 or
+		input.UserInputType == Enum.UserInputType.Gamepad7 or
+		input.UserInputType == Enum.UserInputType.Gamepad8 then
+		if input.KeyCode == Enum.KeyCode.Thumbstick1 or input.KeyCode == Enum.KeyCode.Thumbstick2 then
+			if input.Position.Magnitude > 0.1 then -- Check if stick is tilted significantly
+				resetInactivityTimer()
+			end
+		end
+	end
+end)
+
+
+-- Detect when the player tabs OUT of the window
+UserInputService.WindowFocusReleased:Connect(function()
+
+	isWindowFocused = false
+	
+end)
+
+-- Detect when the player tabs INTO the window
+UserInputService.WindowFocused:Connect(function()
+
+	isWindowFocused = true
+	resetInactivityTimer() -
+end)
+
+
+Player.CharacterAdded:Connect(onCharacterAdded)
+
+
+while true do
+	checkAndUpdateAFKStatus()
+	task.wait(CHECK_INTERVAL) 
+end
