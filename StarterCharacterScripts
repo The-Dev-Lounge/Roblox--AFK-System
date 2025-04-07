@@ -1,4 +1,4 @@
-Local script which goes in **StarterCharacterScripts**:
+Local script:
 
 --Made by Wherahamz234--
 --Join the Discord: https://discord.gg/E9DV9WesJy--
@@ -139,3 +139,19 @@ while true do
 	checkAndUpdateAFKStatus()
 	task.wait(CHECK_INTERVAL) 
 end
+
+
+
+
+Script:
+
+--Made by Wherahamz234--
+--Join the Discord: https://discord.gg/E9DV9WesJy--
+wait()
+local Char = script.Parent
+local AFKTag = script:FindFirstChild("AFKTag")
+
+local AFKTagClone = AFKTag:Clone()
+AFKTagClone.Parent = Char:FindFirstChild("Head")
+AFKTagClone.Adornee = Char:FindFirstChild("Head")
+
